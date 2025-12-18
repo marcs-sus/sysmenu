@@ -7,9 +7,21 @@ if ! command -v fzf &>/dev/null; then
 fi
 
 # Check if gum is installed
-IS_GUM_INSTALLED=false
 if command -v gum &>/dev/null; then
     IS_GUM_INSTALLED=true
+else
+    IS_GUM_INSTALLED=false
+fi
+
+# Check if bat is installed and define its command
+if command -v bat &>/dev/null; then
+    IS_BAT_INSTALLED=true
+    BAT_COMMAND="bat"
+elif command -v batcat &>/dev/null; then
+    IS_BAT_INSTALLED=true
+    BAT_COMMAND="batcat"
+else
+    IS_BAT_INSTALLED=false
 fi
 
 get_sysd_units() {
@@ -74,7 +86,12 @@ execute_action() {
 
     # Run the selected action on the chosen service
     if [[ $action == "logs" ]]; then
-        sudo journalctl -u "$service" -xe | less
+        # Show logs with bat or less
+        if $IS_BAT_INSTALLED; then
+            sudo journalctl -u "$service" -xe | $BAT_COMMAND --paging=always -l log
+        else
+            sudo journalctl -u "$service" -xe | less
+        fi
     else
         sudo systemctl "$action" "$service"
     fi
