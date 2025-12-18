@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Interactive systemd service manager using fzf, gum, and bat
+
 # Exit if fzf is not installed
 if ! command -v fzf &>/dev/null; then
     echo "fzf is required but not installed. Please install fzf to use this script."
@@ -63,8 +65,10 @@ service=$(get_sysd_units |
     fzf --preview 'systemctl status {1} --no-pager' \
         --preview-window=down:40%:wrap \
         --header 'Select a systemd service to manage' \
+        --color "fg+:bold,hl:reverse,fg+:yellow,header:italic:underline" \
         --ansi \
-        --border |
+        --border \
+        --reverse |
     awk '{print $1}')
 
 [[ -z $service ]] && exit 0
@@ -74,8 +78,12 @@ if $IS_GUM_INSTALLED; then
     action=$(printf "start\nstop\nrestart\nenable\ndisable\nstatus\nlogs" |
         gum choose --header "Select action for $service")
 else
-    action=$(printf "start\nstop\nrestart\nenable\ndisable\nstatus\nlogs" |
-        fzf --header "Select action for $service" --border)
+    action=$(
+        printf "start\nstop\nrestart\nenable\ndisable\nstatus\nlogs" |
+            fzf --header "Select action for $service" \
+                --border \
+                --reverse
+    )
 fi
 
 [[ -z $action ]] && exit 0
@@ -100,12 +108,14 @@ execute_action() {
 # Confirm the action with the user using gum or fzf
 if $IS_GUM_INSTALLED; then
     gum confirm "Execute '$action' on '$service'?" || exit 0
-    gum spin --spinner dot --title "Running $action on $service..." -- sleep 1
+    gum spin --spinner dot --title "Running $action on $service..." -- sleep 0.5
     execute_action "$service" "$action"
 else
     yesno=$(printf "yes\nno" |
-        fzf --header "Execute '$action' on '$service'?" --border)
+        fzf --header "Execute '$action' on '$service'?" \
+            --border \
+            --reverse \
+            --disabled)
     [[ $yesno != "yes" ]] && exit 0
-    echo "Running $action on $service..."
     execute_action "$service" "$action"
 fi
