@@ -9,22 +9,26 @@ get_sysd_units() {
         --no-pager
     )
 
-    # List systemd units and unit files for a given scope
+    # List units with scope and format output
     list_units_with_scope() {
         local scope=$1
+        systemctl --"$scope" list-units "${args[@]}" | \
+            awk -v scope="[$scope]" '{printf "%-60s %-15s %-10s %s\n", $1, $3, $4, scope}'
+    }
 
-        # Shift parameter to get remaining args
-        shift
-        (
-            systemctl --"$scope" list-units "${args[@]}"
-            systemctl --"$scope" list-unit-files "${args[@]}"
-        ) | awk -v scope="[$scope]" '{print $0, scope}'
+    # List unit files with scope and format output
+    list_unit_files_with_scope() {
+        local scope=$1
+        systemctl --"$scope" list-unit-files "${args[@]}" | \
+            awk -v scope="[$scope]" '{printf "%-60s %-15s %-10s %s\n", $1, $2, "(file)", scope}'
     }
 
     # List and sort units from both system and user scopes
     (
-        list_units_with_scope system "${args[@]}"
-        list_units_with_scope user "${args[@]}"
+        list_units_with_scope system
+        list_unit_files_with_scope system
+        list_units_with_scope user
+        list_unit_files_with_scope user
     ) | sort -u
 }
 
