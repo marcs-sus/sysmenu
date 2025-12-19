@@ -1,1 +1,5 @@
+# IDE files
 .vscode
+
+# Application desktop file
+sysmenu.debug.desktop

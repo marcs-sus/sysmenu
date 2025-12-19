@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Name=System Menu
+Comment=Interactive systemd service manager
+Exec=$HOME/.local/bin/sysmenu.sh --app
+Icon=utilities-system-monitor
+Terminal=true
+Categories=System;Utility;
+Keywords=systemd;service;manager;
+StartupNotify=true
+Actions=Favorites;
+
+[Desktop Action Favorites]
+Name=Show Favorites
+Exec=$HOME/.local/bin/sysmenu.sh --app --favorites
