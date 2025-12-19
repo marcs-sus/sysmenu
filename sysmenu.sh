@@ -4,12 +4,28 @@
 
 # Global config variables
 FAVORITES_FILE="$HOME/.sysmenu_favorites"
+SHOW_FAVORITES_ONLY=false
 
 # Exit if fzf is not installed
 if ! command -v fzf &>/dev/null; then
     echo "fzf is required but not installed. Please install fzf to use this script."
     exit 1
 fi
+
+# Define the parameters used for this script
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+    --favorites | -f)
+        SHOW_FAVORITES_ONLY=true
+        shift
+        ;;
+
+    *)
+        echo "Unknown parameter: $1"
+        exit 1
+        ;;
+    esac
+done
 
 # Check if gum is installed
 if command -v gum &>/dev/null; then
@@ -70,6 +86,12 @@ get_sysd_units() {
         favorite_units=$(printf "%s\n" "$all_units" |
             grep -Ff "$FAVORITES_FILE" |
             sed 's/^/★ /')
+
+        # If showing only favorites, return only them
+        if $SHOW_FAVORITES_ONLY; then
+            printf "%s\n" "$favorite_units"
+            return
+        fi
 
         # List other units
         other_units=$(printf "%s\n" "$all_units" |
