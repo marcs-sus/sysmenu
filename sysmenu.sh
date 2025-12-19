@@ -2,6 +2,9 @@
 
 # Interactive systemd service manager using fzf, gum, and bat
 
+# Global config variables
+FAVORITES_FILE="$HOME/.sysmenu_favorites"
+
 # Exit if fzf is not installed
 if ! command -v fzf &>/dev/null; then
     echo "fzf is required but not installed. Please install fzf to use this script."
@@ -52,12 +55,32 @@ get_sysd_units() {
     }
 
     # List and sort units from both system and user scopes
-    (
-        list_units_with_scope system
-        list_unit_files_with_scope system
-        list_units_with_scope user
-        list_unit_files_with_scope user
-    ) | sort -u
+    all_units=$(
+        (
+            list_units_with_scope system
+            list_unit_files_with_scope system
+            list_units_with_scope user
+            list_unit_files_with_scope user
+        ) | sort -u
+    )
+
+    # List favorite units from file if it exists
+    if [[ -f $FAVORITES_FILE ]]; then
+        # List favorite units
+        favorite_units=$(printf "%s\n" "$all_units" |
+            grep -Ff "$FAVORITES_FILE" |
+            sed 's/^/★ /')
+
+        # List other units
+        other_units=$(printf "%s\n" "$all_units" |
+            grep -Fvf "$FAVORITES_FILE" |
+            sed 's/^/  /')
+
+        # Combine favorite and other units, emphasizing favorites
+        printf "%s\n%s\n" "$favorite_units" "$other_units"
+    else
+        printf "%s\n" "$all_units"
+    fi
 }
 
 # Use fuzzy-finder to select a systemd service and return to the variable
@@ -69,17 +92,18 @@ service=$(get_sysd_units |
         --ansi \
         --border \
         --reverse |
+    sed 's/^[★ ]* *//' |
     awk '{print $1}')
 
 [[ -z $service ]] && exit 0
 
 # Select an action to perform on the selected service using gum or fzf
 if $IS_GUM_INSTALLED; then
-    action=$(printf "start\nstop\nrestart\nenable\ndisable\nstatus\nlogs" |
+    action=$(printf "start\nstop\nrestart\nenable\ndisable\nstatus\nlogs\nadd to favorites" |
         gum choose --header "Select action for $service")
 else
     action=$(
-        printf "start\nstop\nrestart\nenable\ndisable\nstatus\nlogs" |
+        printf "start\nstop\nrestart\nenable\ndisable\nstatus\nlogs\nadd to favorites" |
             fzf --header "Select action for $service" \
                 --border \
                 --reverse
@@ -100,6 +124,14 @@ execute_action() {
         else
             sudo journalctl -u "$service" -xe | less
         fi
+    elif [[ $action == "add to favorites" ]]; then
+        # Create favorites file if it doesn't exist
+        if [[ ! -f $FAVORITES_FILE ]]; then
+            touch "$FAVORITES_FILE"
+        fi
+
+        # Add service to favorites list
+        echo "$service" >>"$FAVORITES_FILE"
     else
         sudo systemctl "$action" "$service"
     fi
@@ -109,6 +141,7 @@ execute_action() {
 if $IS_GUM_INSTALLED; then
     gum confirm "Execute '$action' on '$service'?" || exit 0
     gum spin --spinner dot --title "Running $action on $service..." -- sleep 0.5
+
     execute_action "$service" "$action"
 else
     yesno=$(printf "yes\nno" |
@@ -116,6 +149,8 @@ else
             --border \
             --reverse \
             --disabled)
+
     [[ $yesno != "yes" ]] && exit 0
+
     execute_action "$service" "$action"
 fi
