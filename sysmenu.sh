@@ -112,7 +112,7 @@ main() {
 
     # Use fuzzy-finder to select a systemd service and return to the variable
     service=$(get_sysd_units |
-        fzf --preview 'systemctl status {1} --no-pager' \
+        fzf --preview "echo {} | sed 's/^[★ ]* *//' | awk '{print \$1}' | xargs systemctl status --no-pager" \
             --preview-window=down:40%:wrap \
             --header 'Select a systemd service to manage' \
             --color "fg+:bold,hl:reverse,fg+:yellow,header:italic:underline" \
