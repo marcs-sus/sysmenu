@@ -110,28 +110,29 @@ main() {
         fi
     }
 
-    # Use fuzzy-finder to select a systemd service and return to the variable
-    service=$(get_sysd_units |
+    # Use fuzzy-finder to select one or multiple systemd services and return to the variable
+    services=$(get_sysd_units |
         fzf --preview "echo {} | sed 's/^[★ ]* *//' | awk '{print \$1}' | xargs systemctl status --no-pager" \
             --preview-window=down:40%:wrap \
             --header 'Select a systemd service to manage' \
             --color "fg+:bold,hl:reverse,fg+:yellow,header:italic:underline" \
             --ansi \
+            --multi \
             --border \
             --reverse |
         sed 's/^[★ ]* *//' |
         awk '{print $1}')
 
-    [[ -z $service ]] && exit 0
+    [[ -z $services ]] && exit 0
 
-    # Select an action to perform on the selected service using gum or fzf
+    # Select an action to perform on the selected services using gum or fzf
     if $IS_GUM_INSTALLED; then
         action=$(printf "start\nstop\nrestart\nenable\ndisable\nstatus\nlogs\nadd to favorites" |
-            gum choose --header "Select action for $service")
+            gum choose --header "Select action for ${services[*]}")
     else
         action=$(
             printf "start\nstop\nrestart\nenable\ndisable\nstatus\nlogs\nadd to favorites" |
-                fzf --header "Select action for $service" \
+                fzf --header "Select action for ${services[*]}" \
                     --border \
                     --reverse
         )
@@ -140,51 +141,60 @@ main() {
     [[ -z $action ]] && exit 0
 
     execute_action() {
-        local service=$1
+        local services=$1
         local action=$2
 
-        # Run the selected action on the chosen service
-        if [[ $action == "logs" ]]; then
+        # Run the selected action on the chosen services
+        case $action in
+        logs)
             # Show logs with bat or less
+            local journalctl_args=()
+            for service in $services; do
+                journalctl_args+=(-u "$service")
+            done
+
             if $IS_BAT_INSTALLED; then
-                sudo journalctl -u "$service" -xe | $BAT_COMMAND --paging=always -l log
+                sudo journalctl "${journalctl_args[@]}" -xe | $BAT_COMMAND --paging=always -l log
             else
-                sudo journalctl -u "$service" -xe | less
+                sudo journalctl "${journalctl_args[@]}" -xe | less
             fi
-        elif [[ $action == "add to favorites" ]]; then
+            ;;
+        add\ to\ favorites)
             # Create favorites file if it doesn't exist
             if [[ ! -f $FAVORITES_FILE ]]; then
                 touch "$FAVORITES_FILE"
             fi
 
             # Add service to favorites list
-            echo "$service" >>"$FAVORITES_FILE"
-        else
-            sudo systemctl "$action" "$service"
+            printf "%s\n" "$services" >>"$FAVORITES_FILE"
+            ;;
+        *)
+            sudo systemctl "$action" $services
 
             if $RUN_AS_APP; then
                 read -rp "Press Enter to continue..."
                 clear
             fi
-        fi
+            ;;
+        esac
     }
 
     # Confirm the action with the user using gum or fzf
     if $IS_GUM_INSTALLED; then
-        gum confirm "Execute '$action' on '$service'?" || exit 0
-        gum spin --spinner dot --title "Running $action on $service..." -- sleep 0.5
+        gum confirm "Execute '$action' on '${services[*]}'?" || exit 0
+        gum spin --spinner dot --title "Running $action on ${services[*]}..." -- sleep 0.5
 
-        execute_action "$service" "$action"
+        execute_action "$services" "$action"
     else
         yesno=$(printf "yes\nno" |
-            fzf --header "Execute '$action' on '$service'?" \
+            fzf --header "Execute '$action' on '${services[*]}'?" \
                 --border \
                 --reverse \
                 --disabled)
 
         [[ $yesno != "yes" ]] && exit 0
 
-        execute_action "$service" "$action"
+        execute_action "$services" "$action"
     fi
 }
 
