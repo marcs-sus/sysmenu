@@ -149,12 +149,14 @@ main() {
 
     # Select an action to perform on the selected services using gum or fzf
     if $IS_GUM_INSTALLED; then
-        action=$(printf "start\nstop\nrestart\nenable\ndisable\nstatus\nlogs\nadd to favorites" |
-            gum choose --header "Select action for ${services[*]}")
+        action=$(
+            printf "start\nstop\nrestart\nenable\ndisable\nstatus\nlogs\nadd to favorites" |
+                gum choose --header "$(printf "%s\n" "Select action for:" "${services[*]}")"
+        )
     else
         action=$(
             printf "start\nstop\nrestart\nenable\ndisable\nstatus\nlogs\nadd to favorites" |
-                fzf --header "Select action for ${services[*]}" \
+                fzf --header "$(printf "%s\n" "Select action for:" "${services[*]}")" \
                     --border \
                     --reverse
         )
@@ -210,13 +212,13 @@ main() {
 
     # Confirm the action with the user using gum or fzf
     if $IS_GUM_INSTALLED; then
-        gum confirm "Execute '$action' on '${services[*]}'?" || exit 0
-        gum spin --spinner dot --title "Running $action on ${services[*]}..." -- sleep 0.5
+        gum confirm "$(printf "%s\n" "Execute '$action' on" "${services[*]}"?)" || exit 0
+        gum spin --spinner dot --title "$(printf "%s\n" "Running $action on" "${services[*]}...")" -- sleep 0.5
 
         execute_action "$services" "$action"
     else
         yesno=$(printf "yes\nno" |
-            fzf --header "Execute '$action' on '${services[*]}'?" \
+            fzf --header "$(printf "%s\n" "Execute '$action' on" "${services[*]}"?)" \
                 --border \
                 --reverse \
                 --disabled)
