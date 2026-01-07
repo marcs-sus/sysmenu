@@ -19,11 +19,20 @@ readonly FAVORITES_FILE="$HOME/.sysmenu_favorites"
 SHOW_FAVORITES_ONLY=false
 RUN_AS_APP=false
 
-# Exit if fzf is not installed
-if ! command -v fzf &>/dev/null; then
-    echo "fzf is required but not installed. Please install fzf to use this script."
-    exit 1
-fi
+# Function to check if a command is available
+require_command() {
+    if ! command -v "$1" &>/dev/null; then
+        echo "Error: $1 is required but not installed"
+        exit 1
+    fi
+}
+
+# Commands required for this script
+require_command fzf
+require_command systemctl
+require_command journalctl
+require_command sudo
+require_command awk
 
 # Define the parameters used for this script
 while [[ $# -gt 0 ]]; do
@@ -62,6 +71,7 @@ else
 fi
 
 main() {
+    # Function to get systemd units
     get_sysd_units() {
         # Define arguments for systemctl commands
         local args=(
@@ -152,6 +162,7 @@ main() {
 
     [[ -z $action ]] && exit 0
 
+    # Function to execute the selected action
     execute_action() {
         local services=$1
         local action=$2
