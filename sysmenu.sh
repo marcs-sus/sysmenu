@@ -202,6 +202,19 @@ main() {
         *)
             sudo systemctl "$action" $services
 
+            # Display success message
+            if $IS_GUM_INSTALLED; then
+                gum style "Action successfully executed on:" "${services[*]}!" \
+                    --foreground 212 \
+                    --border double \
+                    --margin "1 1" \
+                    --padding "1 2" \
+                    --align center \
+                    --bold
+            else
+                echo "Action successfully executed on: ${services[*]}!"
+            fi
+
             if $RUN_AS_APP; then
                 read -rp "Press Enter to continue..."
                 clear
