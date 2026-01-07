@@ -2,7 +2,11 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-# Interactive systemd service manager using fzf, gum, and bat
+# === Interactive systemd service manager using fzf, gum, and bat ===
+
+# Traps
+trap 'echo "Error on line $LINENO"; exit 1' ERR
+trap 'echo "Script interrupted"; exit 130' INT TERM
 
 # Exit if run as root
 if [[ $EUID -eq 0 ]]; then
