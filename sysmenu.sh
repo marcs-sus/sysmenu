@@ -165,8 +165,11 @@ main() {
                 touch "$FAVORITES_FILE"
             fi
 
-            # Add service to favorites list
-            printf "%s\n" "$services" >>"$FAVORITES_FILE"
+            # Add services to favorites list
+            for service in $services; do
+                # Add service to favorites list if it's not already there
+                grep -qxF "$service" "$FAVORITES_FILE" || echo "$service" >>"$FAVORITES_FILE"
+            done
             ;;
         *)
             sudo systemctl "$action" $services
