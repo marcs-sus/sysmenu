@@ -1,9 +1,17 @@
 #!/bin/bash
+set -euo pipefail
+IFS=$'\n\t'
 
 # Interactive systemd service manager using fzf, gum, and bat
 
+# Exit if run as root
+if [[ $EUID -eq 0 ]]; then
+    echo "This script should not be run as root"
+    exit 1
+fi
+
 # Global config variables
-FAVORITES_FILE="$HOME/.sysmenu_favorites"
+readonly FAVORITES_FILE="$HOME/.sysmenu_favorites"
 SHOW_FAVORITES_ONLY=false
 RUN_AS_APP=false
 
@@ -163,12 +171,15 @@ main() {
             # Create favorites file if it doesn't exist
             if [[ ! -f $FAVORITES_FILE ]]; then
                 touch "$FAVORITES_FILE"
+                chmod 600 "$FAVORITES_FILE"
             fi
 
             # Add services to favorites list
             for service in $services; do
                 # Add service to favorites list if it's not already there
-                grep -qxF "$service" "$FAVORITES_FILE" || echo "$service" >>"$FAVORITES_FILE"
+                if ! grep -qxF "$service" "$FAVORITES_FILE" 2>/dev/null; then
+                    echo "$service" >>"$FAVORITES_FILE"
+                fi
             done
             ;;
         *)
