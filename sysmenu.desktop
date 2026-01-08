@@ -2,7 +2,7 @@
 Type=Application
 Name=System Menu
 Comment=Interactive systemd service manager
-Exec=$HOME/.local/bin/sysmenu.sh --app
+Exec="\\$"HOME/.local/bin/sysmenu.sh --app
 Icon=utilities-system-monitor
 Terminal=true
 Categories=System;Utility;
@@ -12,4 +12,4 @@ Actions=Favorites;
 
 [Desktop Action Favorites]
 Name=Show Favorites
-Exec=$HOME/.local/bin/sysmenu.sh --app --favorites
+Exec="\\$"HOME/.local/bin/sysmenu.sh --app --favorites
