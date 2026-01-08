@@ -28,6 +28,18 @@ For a better user experience, it is recommended to also install:
 
 ## Installation
 
+The easiest way to install sysmenu is using the automated installer:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/marcs-sus/sysmenu/master/install.sh | bash
+```
+
+> **⚠️ Security Note:** It's generally not recommended to pipe curl commands directly to bash without checking them first. The `install.sh` script simply downloads the sysmenu binary, makes it executable, installs the desktop entry, and updates your desktop database.
+
+### Manual Installation
+
+If you prefer to install manually:
+
 1.  Make the script executable:
 
     ```bash
@@ -61,7 +73,7 @@ sysmenu allows you to mark services as "favorites" for quicker access. These fav
 
 ## Desktop Integration
 
-sysmenu includes a `.desktop` file that allows you to launch it as a desktop application from your application menu.
+sysmenu includes a `.desktop` file that allows you to launch it as a desktop application from your application menu. The automated installer handles this for you, but if you installed manually, follow these steps:
 
 1.  Update the `Exec` path in `sysmenu.desktop` to point to the location where you installed the `sysmenu.sh` script. For example, if you installed it to `$HOME/.local/bin/sysmenu`, the `Exec` lines should look like this:
 
@@ -81,3 +93,29 @@ sysmenu includes a `.desktop` file that allows you to launch it as a desktop app
     ```
 
 After installation, you should be able to find "System Menu" in your application launcher.
+
+## Uninstallation
+
+To uninstall sysmenu:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/marcs-sus/sysmenu/master/uninstall.sh | bash
+```
+
+Or simply remove the files:
+
+```bash
+rm ~/.local/bin/sysmenu
+rm ~/.local/share/applications/sysmenu.desktop
+rm ~/.sysmenu_favorites
+```
+
+## Acknowledgements
+
+This project was mainly inspired by [sysz](https://github.com/joehillen/sysz), an excellent systemd service selector that provided the foundation for this tool's concept.
+
+sysmenu also wouldn't be possible without these amazing tools:
+
+- [fzf](https://github.com/junegunn/fzf) - The fuzzy finder that powers service selection
+- [bat](https://github.com/sharkdp/bat) - Syntax highlighting for logs and output
+- [gum](https://github.com/charmbracelet/gum) - Beautiful TUI components for confirmations and styling
