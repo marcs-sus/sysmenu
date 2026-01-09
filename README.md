@@ -2,6 +2,10 @@
 
 sysmenu is an interactive `systemd` service manager for the command line. It uses `fzf`, `gum`, and `bat` to provide a simple and efficient way to manage `systemd` units.
 
+## Demo Video
+
+[![asciicast](https://asciinema.org/a/FHSdVYqBtkB8eRKm.svg)](https://asciinema.org/a/FHSdVYqBtkB8eRKm)
+
 ## Features
 
 - **Interactive management:** Easily start, stop, restart, enable, and disable `systemd` services.
