@@ -49,8 +49,8 @@ fi
 echo "Installing desktop entry..."
 curl -fsSL "$RAW_GITHUB/master/$DESKTOP_FILE_NAME" -o "$APP_DIR/$DESKTOP_FILE_NAME"
 
-# Update Exec path in desktop file 
-sed -i "s|^Exec=.*|Exec=$INSTALL_DIR/$SCRIPT_DEST_NAME %F|" "$APP_DIR/$DESKTOP_FILE_NAME"
+# Update desktop entry HOME path
+sed -i "s|<HOME>|$HOME|g" "$APP_DIR/$DESKTOP_FILE_NAME"
 
 # Update desktop database
 if command -v update-desktop-database &> /dev/null; then
