@@ -150,12 +150,12 @@ main() {
     # Select an action to perform on the selected services using gum or fzf
     if $IS_GUM_INSTALLED; then
         action=$(
-            printf "start\nstop\nrestart\nenable\ndisable\nstatus\nlogs\nadd to favorites" |
+            printf "start\nstop\nrestart\nenable\ndisable\nstatus\nlogs\ntoggle favorite" |
                 gum choose --header "$(printf "%s\n" "Select action for:" "${services[*]}")"
         )
     else
         action=$(
-            printf "start\nstop\nrestart\nenable\ndisable\nstatus\nlogs\nadd to favorites" |
+            printf "start\nstop\nrestart\nenable\ndisable\nstatus\nlogs\ntoggle favorite" |
                 fzf --header "$(printf "%s\n" "Select action for:" "${services[*]}")" \
                     --border \
                     --reverse
@@ -184,18 +184,21 @@ main() {
                 sudo journalctl "${journalctl_args[@]}" -xe | less
             fi
             ;;
-        add\ to\ favorites)
+        toggle\ favorite)
             # Create favorites file if it doesn't exist
             if [[ ! -f $FAVORITES_FILE ]]; then
                 touch "$FAVORITES_FILE"
                 chmod 600 "$FAVORITES_FILE"
             fi
 
-            # Add services to favorites list
+            # Add or remove services to/from favorites list
             for service in $services; do
-                # Add service to favorites list if it's not already there
+                # Add service to favorites list
                 if ! grep -qxF "$service" "$FAVORITES_FILE" 2>/dev/null; then
                     echo "$service" >>"$FAVORITES_FILE"
+                else
+                    # Remove service from favorites list if it exists
+                    grep -vxF "$service" "$FAVORITES_FILE" >"${FAVORITES_FILE}.tmp" && mv "${FAVORITES_FILE}.tmp" "$FAVORITES_FILE"
                 fi
             done
             ;;
