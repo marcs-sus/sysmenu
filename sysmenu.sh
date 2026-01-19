@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
 
@@ -10,7 +10,7 @@ trap 'echo "Script interrupted"; exit 130' INT TERM
 
 # Exit if run as root
 if [[ $EUID -eq 0 ]]; then
-    echo "This script should not be run as root"
+    echo "This script must not be run as root"
     exit 1
 fi
 
