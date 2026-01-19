@@ -5,7 +5,7 @@ IFS=$'\n\t'
 # === Interactive systemd service manager using fzf, gum, and bat ===
 
 # Traps
-trap 'echo "Error on line $LINENO"; exit 1' ERR
+trap 'echo "Error on line $LINENO: $BASH_COMMAND"; coredump' ERR
 trap 'echo "Script interrupted"; exit 130' INT TERM
 
 # Exit if run as root
@@ -15,7 +15,7 @@ if [[ $EUID -eq 0 ]]; then
 fi
 
 # Global config variables
-readonly FAVORITES_FILE="$HOME/.sysmenu_favorites"
+FAVORITES_FILE="$HOME/.sysmenu_favorites"
 SHOW_FAVORITES_ONLY=false
 RUN_AS_APP=false
 
@@ -133,7 +133,7 @@ main() {
     }
 
     # Use fuzzy-finder to select one or multiple systemd services and return to the variable
-    services=$(get_sysd_units |
+    selected=$(get_sysd_units |
         fzf --preview "echo {} | sed 's/^[★ ]* *//' | awk '{print \$1}' | xargs systemctl status --no-pager" \
             --preview-window=down:40%:wrap \
             --header 'Select a systemd service to manage' \
@@ -141,9 +141,10 @@ main() {
             --ansi \
             --multi \
             --border \
-            --reverse |
-        sed 's/^[★ ]* *//' |
-        awk '{print $1}')
+            --reverse)
+
+    services=$(echo "$selected" | sed 's/^[★ ]* *//' | awk '{print $1}')
+    scopes=$(echo "$selected" | sed 's/^[★ ]* *//' | awk '{print $NF}')
 
     [[ -z $services ]] && exit 0
 
@@ -167,7 +168,8 @@ main() {
     # Function to execute the selected action
     execute_action() {
         local services=$1
-        local action=$2
+        local scopes=$2
+        local action=$3
 
         # Run the selected action on the chosen services
         case $action in
@@ -203,7 +205,36 @@ main() {
             done
             ;;
         *)
-            sudo systemctl "$action" $services
+            mapfile -t services_arr < <(printf "%s\n" "$services")
+            mapfile -t scopes_arr < <(printf "%s\n" "$scopes")
+
+            local -a system_services=()
+            local -a user_services=()
+
+            for i in "${!services_arr[@]}"; do
+                local service=${services_arr[$i]}
+                local scope=${scopes_arr[$i]}
+
+                if [[ -z "$service" ]]; then
+                    continue
+                fi
+
+                if [[ "$scope" == "[system]" ]]; then
+                    system_services+=("$service")
+                elif [[ "$scope" == "[user]" ]]; then
+                    user_services+=("$service")
+                fi
+            done
+
+            # Execute action on system services
+            if ((${#system_services[@]} > 0)); then
+                sudo systemctl --system --no-pager "$action" "${system_services[@]}"
+            fi
+
+            # Execute action on user services
+            if ((${#user_services[@]} > 0)); then
+                systemctl --user --no-pager "$action" "${user_services[@]}"
+            fi
 
             # Display success message
             if $IS_GUM_INSTALLED; then
@@ -231,7 +262,7 @@ main() {
         gum confirm "$(printf "%s\n" "Execute '$action' on" "${services[*]}"?)" || exit 0
         gum spin --spinner dot --title "$(printf "%s\n" "Running $action on" "${services[*]}...")" -- sleep 0.5
 
-        execute_action "$services" "$action"
+        execute_action "$services" "$scopes" "$action"
     else
         yesno=$(printf "yes\nno" |
             fzf --header "$(printf "%s\n" "Execute '$action' on" "${services[*]}"?)" \
@@ -241,7 +272,7 @@ main() {
 
         [[ $yesno != "yes" ]] && exit 0
 
-        execute_action "$services" "$action"
+        execute_action "$services" "$scopes" "$action"
     fi
 }
 
